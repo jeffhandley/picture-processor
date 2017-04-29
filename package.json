@@ -1,0 +1,19 @@
+{
+  "name": "picture-processor",
+  "version": "0.1.0",
+  "description": "Process our digital pictures for archive",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeffhandley/picture-processor.git"
+  },
+  "author": "Jeff Handley",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jeffhandley/picture-processor/issues"
+  },
+  "homepage": "https://github.com/jeffhandley/picture-processor#readme"
+}
