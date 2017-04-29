@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/jeffhandley/picture-processor/issues"
   },
-  "homepage": "https://github.com/jeffhandley/picture-processor#readme"
+  "homepage": "https://github.com/jeffhandley/picture-processor#readme",
+  "dependencies": {
+    "exif": "^0.6.0"
+  }
 }
