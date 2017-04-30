@@ -1,5 +1,5 @@
 import { argv } from 'yargs';
-import fs from 'fs';
+import fs, { renameSync } from 'fs';
 import path from 'path';
 import mkdirp from 'mkdirp';
 import moment from 'moment';
@@ -184,7 +184,7 @@ function copyFile(filePath, timestamp, { dest, nameFormat, suffix, moveFile }, n
                 console.log(`# ${destFilePath} exists. Skipping.`);
                 callback();
             } else {
-                const operation = moveFile ? moveSync : copySync;
+                const operation = moveFile ? renameOrMoveSync : copySync;
                 const operationName = moveFile ? `mv` : 'cp';
 
                 console.log(`${operationName} "${filePath}" "${destFilePath}"`);
@@ -205,6 +205,14 @@ function copyFile(filePath, timestamp, { dest, nameFormat, suffix, moveFile }, n
             }
         });
     });
+}
+
+function renameOrMoveSync(source, destination) {
+    try {
+        renameSync(source, destination);
+    } catch {
+        moveSync(source, destination);
+    }
 }
 
 function isIgnored(file) {
