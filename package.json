@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "babel-node ./src/index.js",
-    "toserver": "npm start -- -r --movepictures \"/Volumes/photos/ByDate\" --movemovies \"/Volumes/photos/ByDate/Videos\""
+    "toserver": "npm start -- -r --movepictures \"/Volumes/photos/ByDate\" --movemovies \"/Volumes/photos/ByDate/Videos\" --moveothers \"/Volumes/photos/ByDate/Unknown\""
   },
   "repository": {
     "type": "git",
