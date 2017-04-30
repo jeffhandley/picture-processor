@@ -28,7 +28,7 @@ const otherLabel = argv.otherlabel ? ('-' + argv.otherlabel) : label;
 const moveOther = !!(argv.moveothers);
 
 if (!src || !fs.statSync(src).isDirectory()) {
-    console.log('You must specify --src as the path to a directory');
+    console.error('You must specify --src as the path to a directory');
     process.exit(1);
 }
 
@@ -69,7 +69,7 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
 
             fs.stat(filePath, (statErr, stats) => {
                 if (statErr) {
-                    console.warn(`Error processing ${filePath}\n${statErr}`);
+                    console.warn(`# Error processing ${filePath}\n${statErr}`);
                 } else if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
@@ -114,28 +114,30 @@ function processJpeg(image, target, noop, progress) {
     if (progress.picturesTotal - progress.picturesDone > 10) {
         progress.picturesWaiting += 1;
 
+        console.log(`# Queueing ${image}`);
+
         return setTimeout(() => {
             progress.picturesWaiting -= 1;
             processJpeg(image, target, noop, progress);
         }, 100);
     }
 
-    console.log(`# Processing jpeg file ${image}`);
-
     const done = () => {
         progress.picturesDone += 1;
         showProgress(progress);
     };
 
+    console.log(`# Loading ${image}`);
+
+    progress.picturesTotal += 1;
+    showProgress(progress);
+
     new ExifImage({ image }, (imageErr, exifData) => {
         if (imageErr) {
-            console.warn(`Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
+            console.warn(`# Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
             return processFile(image, target, noop, done);
         }
-
-        progress.picturesTotal += 1;
-        showProgress(progress);
 
         const { DateTimeOriginal } = exifData.exif;
         const parsedDate = parse(DateTimeOriginal);
@@ -155,7 +157,7 @@ function processFile(file, target, noop, progress) {
 
     fs.stat(file, (statErr, stats) => {
         if (statErr) {
-            console.warn(`Error processing file ${file}.\n${statErr}`);
+            console.warn(`# Error processing file ${file}.\n${statErr}`);
             return done(statErr);
         }
 
@@ -176,7 +178,6 @@ function processMovie(movie, target, noop, progress) {
     const stats = fs.statSync(movie);
     const { birthtime } = stats;
 
-    console.log(`# Processing movie file ${movie}`);
     copyFile(movie, birthtime, target, noop, done);
 }
 
@@ -204,7 +205,7 @@ function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, no
                         console.log(`# ${operationName} ${destFilePath} complete.`);
                         callback();
                     } catch (copyErr) {
-                        console.log(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
+                        console.warn(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
                         callback(copyErr);
                     }
                 } else {
@@ -258,6 +259,7 @@ const progress = {
 };
 
 function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesWaiting, picturesTotal, moviesDone, moviesTotal, othersTotal, othersDone }) {
+    console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
     directoriesTotal && console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
     (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting} (${picturesWaiting} waiting)`);
     moviesTotal && console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
