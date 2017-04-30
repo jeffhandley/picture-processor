@@ -53,7 +53,6 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, progres
             }
 
             const filePath = path.join(srcDirectory, file);
-            console.log(`# Processing ${filePath}`);
 
             fs.stat(filePath, (statErr, stats) => {
                 if (statErr) {
@@ -95,6 +94,18 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, progres
 }
 
 function processJpeg(image, target, noop, progress) {
+    if (progress.picturesTotal - progress.picturesDone > 10) {
+        progress.picturesWaiting += 1;
+
+        return setTimeout(() => {
+            progress.picturesWaiting -= 1;
+            processJpeg(image, target, noop, progress);
+        }, 100);
+    }
+
+    progress.picturesTotal += 1;
+    showProgress(progress);
+
     console.log(`# Processing jpeg file ${image}`);
 
     const done = () => {
@@ -102,17 +113,14 @@ function processJpeg(image, target, noop, progress) {
         showProgress(progress);
     };
 
-    new ExifImage({ image }, (imageErr, { exif }) => {
+    new ExifImage({ image }, (imageErr, exifData) => {
         if (imageErr) {
             console.warn(`Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
             return processGenericPicture(image, target, noop, done);
         }
 
-        progress.picturesTotal += 1;
-        showProgress(progress);
-
-        const { DateTimeOriginal } = exif;
+        const { DateTimeOriginal } = exifData.exif;
         const parsedDate = parse(DateTimeOriginal);
 
         copyFile(image, parsedDate, target, noop, done);
@@ -205,12 +213,20 @@ function renameOrMoveSync(source, destination) {
 }
 
 function isIgnored(file) {
-    if (path.basename(file).toLowerCase() === '.ds_store') {
-        return true;
+    const name = path.basename(file).toLowerCase();
+
+    switch (name) {
+        case '.ds_store':
+        case 'thumbs.db':
+        case 'zbthumbnail.info':
+            return true;
     }
 
-    if (path.extname(file).toLowerCase() === '.thm') {
-        return true;
+    const ext = path.extname(file).toLowerCase();
+
+    switch (ext) {
+        case '.thm':
+            return true;
     }
 
     return false;
@@ -222,15 +238,16 @@ const progress = {
     directoriesTotal: 0,
     directoriesDone: 0,
     picturesTotal: 0,
+    picturesWaiting: 0,
     picturesDone: 0,
     moviesTotal: 0,
     moviesDone: 0
 };
 
-function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesTotal, moviesDone, moviesTotal }) {
-    console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
-    console.log(`# Pictures:    ${picturesDone} / ${picturesTotal}`);
-    console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
+function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesWaiting, picturesTotal, moviesDone, moviesTotal }) {
+    directoriesTotal && console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
+    (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting} (${picturesWaiting} waiting)`);
+    moviesTotal && console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
 }
 
 processDirectory(src, recursive, noop, pictures, movies, progress);
