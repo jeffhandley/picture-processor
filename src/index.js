@@ -201,8 +201,6 @@ function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, no
                 if (!noop) {
                     try {
                         operation(filePath, destFilePath);
-
-                        console.log(`# ${operationName} ${destFilePath} complete.`);
                         callback();
                     } catch (copyErr) {
                         console.warn(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
