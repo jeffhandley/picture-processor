@@ -273,7 +273,7 @@ const progress = {
 function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesWaiting, picturesTotal, moviesDone, moviesTotal, othersTotal, othersDone }) {
     console.log('# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
     console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
-    (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting} (${picturesWaiting} waiting)`);
+    (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting}${picturesWaiting && ` (${picturesWaiting} waiting)`}`);
     moviesTotal && console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
     othersTotal && console.log(`# Others:      ${othersDone} / ${othersTotal}`);
     console.log('# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv');
