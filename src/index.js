@@ -1,44 +1,62 @@
 import { argv } from 'yargs';
 import fs from 'fs';
 import path from 'path';
+import mkdirp from 'mkdirp';
+import moment from 'moment';
 import { ExifImage } from 'exif';
+import { parse } from 'exif-date';
+import { copy } from 'fs-extra';
 
 const src = argv.s || argv.src || argv.source;
-const dest = argv.d || argv.dest || argv.destination;
+const pictureDir = argv.pictures;
+const movieDir = argv.movies;
 const recursive = !!(argv.r || argv.recurse || argv.recursive);
+const pictureNameFormat = argv.picture || 'YYYY/YYYY-MM/YYYY-MM-DD/YYYY-MM-DD-HH-mm-ss';
+const movieNameFormat = argv.movie || 'YYYY-MM-DD-HH-mm-ss';
 
 if (!src || !fs.statSync(src).isDirectory()) {
     console.log('You must specify --src as the path to a directory');
     process.exit(1);
 }
 
-function processDirectory(directory, recurse) {
-    console.log(`Processing ${directory}${recursive && ', recursively'}`);
+if (!pictureDir || !fs.existsSync(pictureDir) || !fs.statSync(pictureDir).isDirectory()) {
+    console.log('You must specify --pictures as the path to a directory');
+    process.exit(1);
+}
 
-    fs.readdir(directory, (dirErr, files) => {
+if (!movieDir || !fs.existsSync(movieDir) || !fs.statSync(movieDir).isDirectory()) {
+    console.log('You must specify --movies as the path to a directory');
+    process.exit(1);
+}
+
+function processDirectory(srcDirectory, recurse, pictureDir, movieDir, pictureNameFormat, movieNameFormat) {
+    console.log(`Processing ${srcDirectory}${recursive && ', recursively'}`);
+
+    fs.readdir(srcDirectory, (dirErr, files) => {
         files.forEach((file) => {
             if (isIgnored(file)) {
                 return;
             }
 
-            const filePath = path.join(directory, file);
+            const filePath = path.join(srcDirectory, file);
             console.log(`Processing ${filePath}`);
 
             fs.stat(filePath, (statErr, stats) => {
                 if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
-                            processDirectory(filePath);
+                            processDirectory(filePath, recurse, pictureDir, movieDir, pictureNameFormat, movieNameFormat);
                         }
                     } else if (stats.isFile()) {
                         switch (path.extname(filePath).toLowerCase()) {
                             case '.jpg':
                             case '.jpeg':
-                                processJpeg(filePath);
+                                processJpeg(filePath, pictureDir, pictureNameFormat);
                                 break;
 
                             case '.mov':
-                                processMovie(filePath);
+                            case '.avi':
+                                processMovie(filePath, movieDir, movieNameFormat);
                                 break;
 
                             default:
@@ -51,12 +69,48 @@ function processDirectory(directory, recurse) {
     });
 }
 
-function processJpeg(filePath) {
-    console.log(`Processing jpeg file ${filePath}`);
+function processJpeg(image, destDirectory, filenameFormat) {
+    console.log(`Processing jpeg file ${image}`);
+
+    new ExifImage({ image }, (imageErr, { exif }) => {
+        const { DateTimeOriginal } = exif;
+        const parsedDate = parse(DateTimeOriginal);
+
+        copyFile(image, parsedDate, destDirectory, filenameFormat);
+    });
 }
 
-function processMovie(filePath) {
-    console.log(`Processing movie file ${filePath}`);
+function processMovie(movie, destDirectory, filenameFormat) {
+    console.log(`Processing movie file ${movie}`);
+
+    fs.stat(movie, (err, stats) => {
+        const { birthtime } = stats;
+
+        copyFile(movie, birthtime, destDirectory, filenameFormat);
+    });
+}
+
+function copyFile(filePath, timestamp, destDirectory, filenameFormat) {
+    const ext = path.extname(filePath).toLowerCase();
+    const destFileName = moment(timestamp).format(filenameFormat) + ext;
+    const destFilePath = path.join(destDirectory, destFileName);
+    const destFileDir = path.dirname(destFilePath);
+
+    mkdirp(destFileDir, (mkdirpErr) => {
+        fs.exists(destFilePath, (exists) => {
+            if (exists) {
+                console.log(`${destFilePath} exists. Skipping.`);
+            } else {
+                copy(filePath, destFilePath, (copyErr) => {
+                    if (copyErr) {
+                        console.log(`Error creating ${destFilePath}.\n${copyErr}`);
+                    } else {
+                        console.log(`Created ${destFilePath}`);
+                    }
+                });
+            }
+        });
+    });
 }
 
 function isIgnored(file) {
@@ -71,6 +125,6 @@ function isIgnored(file) {
     return false;
 }
 
-recursive && console.log('Using recursive mode')
+recursive && console.log('Using recursive mode');
 
-processDirectory(src, recursive);
+processDirectory(src, recursive, pictureDir, movieDir, pictureNameFormat, movieNameFormat);
