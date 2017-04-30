@@ -5,7 +5,7 @@ import mkdirp from 'mkdirp';
 import moment from 'moment';
 import { ExifImage } from 'exif';
 import { parse } from 'exif-date';
-import { copy, move, pathExists, pathExistsSync } from 'fs-extra';
+import { copySync, moveSync, pathExists, pathExistsSync } from 'fs-extra';
 
 const src = argv.s || argv.src || argv.source;
 const recursive = !!(argv.r || argv.recurse || argv.recursive);
@@ -184,21 +184,21 @@ function copyFile(filePath, timestamp, { dest, nameFormat, suffix, moveFile }, n
                 console.log(`# ${destFilePath} exists. Skipping.`);
                 callback();
             } else {
-                const operation = moveFile ? move : copy;
+                const operation = moveFile ? moveSync : copySync;
                 const operationName = moveFile ? `mv` : 'cp';
 
                 console.log(`${operationName} "${filePath}" "${destFilePath}"`);
 
                 if (!noop) {
-                    operation(filePath, destFilePath, (copyErr) => {
-                        if (copyErr) {
-                            console.log(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
-                            callback(copyErr);
-                        } else {
-                            console.log(`# ${operationName} ${destFilePath} complete.`);
-                            callback();
-                        }
-                    });
+                    try {
+                        operation(filePath, destFilePath);
+
+                        console.log(`# ${operationName} ${destFilePath} complete.`);
+                        callback();
+                    } catch (copyErr) {
+                        console.log(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
+                        callback(copyErr);
+                    }
                 } else {
                     callback();
                 }
