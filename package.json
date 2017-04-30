@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "babel-node ./src/index.js",
-    "movetoserver": "npm start -- -r --movepictures \"/Volumes/photos/ByDate\" --movemovies \"/Volumes/photos/ByDate/Videos\" --moveothers \"/Volumes/photos/ByDate/Unknown\" --dedupe",
-    "copytoserver": "npm start -- -r --copypictures \"/Volumes/photos/ByDate\" --copymovies \"/Volumes/photos/ByDate/Videos\" --copyothers \"/Volumes/photos/ByDate/Unknown\" --dedupe"
+    "movetoserver": "npm start -- -r --movepictures \"/Volumes/photos/ByDate\" --movemovies \"/Volumes/photos/ByDate/Videos\" --moveothers \"/Volumes/photos/ByDate/Unknown\"",
+    "copytoserver": "npm start -- -r --copypictures \"/Volumes/photos/ByDate\" --copymovies \"/Volumes/photos/ByDate/Videos\" --copyothers \"/Volumes/photos/ByDate/Unknown\""
   },
   "repository": {
     "type": "git",
