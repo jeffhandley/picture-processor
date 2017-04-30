@@ -10,16 +10,17 @@ import { copySync, moveSync, pathExists, pathExistsSync } from 'fs-extra';
 const src = argv.s || argv.src || argv.source;
 const recursive = !!(argv.r || argv.recurse || argv.recursive);
 const noop = !!(argv.noop);
+const suffix = argv.suffix ? ('-' + argv.suffix) : '';
 
-const pictureDir = argv.pictures;
+const pictureDir = argv.copypictures || argv.movepictures;
 const pictureNameFormat = argv.picture || 'YYYY/YYYY-MM/YYYY-MM-DD/YYYY-MM-DD-HH-mm-ss';
-const pictureSuffix = argv.picturesuffix ? ('-' + argv.picturesuffix) : '';
-const movePicture = !!(argv.movepicture);
+const pictureSuffix = argv.picturesuffix ? ('-' + argv.picturesuffix) : suffix;
+const movePicture = !!(argv.movepictures);
 
-const movieDir = argv.movies;
+const movieDir = argv.copymovies || argv.movemovies;
 const movieNameFormat = argv.movie || 'YYYY-MM-DD-HH-mm-ss';
-const movieSuffix = argv.moviesuffix ? ('-' + argv.moviesuffix) : '';
-const moveMovie = !!(argv.movemovie);
+const movieSuffix = argv.moviesuffix ? ('-' + argv.moviesuffix) : suffix;
+const moveMovie = !!(argv.movemovies);
 
 if (!src || !fs.statSync(src).isDirectory()) {
     console.log('You must specify --src as the path to a directory');
