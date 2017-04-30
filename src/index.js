@@ -8,12 +8,16 @@ import { parse } from 'exif-date';
 import { copy, move, pathExistsSync } from 'fs-extra';
 
 const src = argv.s || argv.src || argv.source;
+const recursive = !!(argv.r || argv.recurse || argv.recursive);
+
 const pictureDir = argv.pictures;
 const pictureNameFormat = argv.picture || 'YYYY/YYYY-MM/YYYY-MM-DD/YYYY-MM-DD-HH-mm-ss';
+const movePicture = !!(argv.movepicture);
+
 const movieDir = argv.movies;
 const movieNameFormat = argv.movie || 'YYYY-MM-DD-HH-mm-ss';
-const recursive = !!(argv.r || argv.recurse || argv.recursive);
-const moveFile = !!(argv.movefile);
+const moveMovie = !!(argv.movemovie);
+
 
 if (!src || !fs.statSync(src).isDirectory()) {
     console.log('You must specify --src as the path to a directory');
@@ -30,7 +34,19 @@ if (!movieDir || !pathExistsSync(movieDir) || !fs.statSync(movieDir).isDirectory
     process.exit(1);
 }
 
-function processDirectory(srcDirectory, recurse, moveFile, pictureDir, movieDir, pictureNameFormat, movieNameFormat) {
+const pictures = {
+    dest: pictureDir,
+    nameFormat: pictureNameFormat,
+    moveFile: movePicture
+};
+
+const movies = {
+    dest: movieDir,
+    nameFormat: movieNameFormat,
+    moveFile: moveMovie
+};
+
+function processDirectory(srcDirectory, recurse, pictures, movies) {
     console.log(`Processing ${srcDirectory}${recursive && ', recursively'}`);
 
     fs.readdir(srcDirectory, (dirErr, files) => {
@@ -48,24 +64,24 @@ function processDirectory(srcDirectory, recurse, moveFile, pictureDir, movieDir,
                 } else if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
-                            processDirectory(filePath, recurse, moveFile, pictureDir, movieDir, pictureNameFormat, movieNameFormat);
+                            processDirectory(filePath, recurse, pictures, movies);
                         }
                     } else if (stats.isFile()) {
                         switch (path.extname(filePath).toLowerCase()) {
                             case '.jpg':
                             case '.jpeg':
-                                processJpeg(filePath, pictureDir, pictureNameFormat, moveFile);
+                                processJpeg(filePath, pictures);
                                 break;
 
                             case '.gif':
-                                processGenericPicture(filePath, pictureDir, pictureNameFormat, moveFile);
+                                processGenericPicture(filePath, pictures);
                                 break;
 
                             case '.mov':
                             case '.avi':
                             case '.3gp':
                             case '.mp4':
-                                processMovie(filePath, movieDir, movieNameFormat, moveFile);
+                                processMovie(filePath, movies);
                                 break;
 
                             default:
@@ -78,24 +94,24 @@ function processDirectory(srcDirectory, recurse, moveFile, pictureDir, movieDir,
     });
 }
 
-function processJpeg(image, destDirectory, filenameFormat, moveFile) {
+function processJpeg(image, { dest, nameFormat, moveFile }) {
     console.log(`Processing jpeg file ${image}`);
 
     new ExifImage({ image }, (imageErr, { exif }) => {
         if (imageErr) {
             console.warn(`Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
-            return processGenericPicture(image, destDirectory, filenameFormat);
+            return processGenericPicture(image, dest, nameFormat);
         }
 
         const { DateTimeOriginal } = exif;
         const parsedDate = parse(DateTimeOriginal);
 
-        copyFile(image, parsedDate, destDirectory, filenameFormat);
+        copyFile(image, parsedDate, dest, nameFormat);
     });
 }
 
-function processGenericPicture(picture, destDirectory, filenameFormat, moveFile) {
+function processGenericPicture(picture, { dest, nameFormat, moveFile }) {
     fs.stat(picture, (statErr, stats) => {
         if (statErr) {
             console.warn(`Error processing file ${picture}.\n${statErr}`);
@@ -103,11 +119,11 @@ function processGenericPicture(picture, destDirectory, filenameFormat, moveFile)
         }
 
         const { birthtime } = stats;
-        copyFile(picture, birthtime, destDirectory, filenameFormat);
+        copyFile(picture, birthtime, dest, nameFormat);
     });
 }
 
-function processMovie(movie, destDirectory, filenameFormat, moveFile) {
+function processMovie(movie, { dest, nameFormat, moveFile }) {
     console.log(`Processing movie file ${movie}`);
 
     fs.stat(movie, (statErr, stats) => {
@@ -117,14 +133,14 @@ function processMovie(movie, destDirectory, filenameFormat, moveFile) {
         }
 
         const { birthtime } = stats;
-        copyFile(movie, birthtime, destDirectory, filenameFormat);
+        copyFile(movie, birthtime, dest, nameFormat);
     });
 }
 
-function copyFile(filePath, timestamp, destDirectory, filenameFormat, moveFile) {
+function copyFile(filePath, timestamp, dest, nameFormat, moveFile) {
     const ext = path.extname(filePath).toLowerCase();
-    const destFileName = moment(timestamp).format(filenameFormat) + ext;
-    const destFilePath = path.join(destDirectory, destFileName);
+    const destFileName = moment(timestamp).format(nameFormat) + ext;
+    const destFilePath = path.join(dest, destFileName);
     const destFileDir = path.dirname(destFilePath);
 
     mkdirp(destFileDir, (mkdirpErr) => {
@@ -163,4 +179,4 @@ function isIgnored(file) {
 
 recursive && console.log('Using recursive mode');
 
-processDirectory(src, recursive, moveFile, pictureDir, movieDir, pictureNameFormat, movieNameFormat);
+processDirectory(src, recursive, pictures, movies);
