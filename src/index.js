@@ -87,6 +87,7 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
                                 break;
 
                             case '.gif':
+                            case '.mpo':
                                 pictures && processFile(filePath, pictures, noop, progress, done);
                                 break;
 
