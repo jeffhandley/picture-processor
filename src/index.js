@@ -58,6 +58,8 @@ function processDirectory(srcDirectory, recurse, pictureDir, movieDir, pictureNa
 
                             case '.mov':
                             case '.avi':
+                            case '.3gp':
+                            case '.mp4':
                                 processMovie(filePath, movieDir, movieNameFormat);
                                 break;
 
