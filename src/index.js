@@ -21,30 +21,19 @@ const movieNameFormat = argv.movie || 'YYYY-MM-DD-HH-mm-ss';
 const movieSuffix = argv.moviesuffix ? ('-' + argv.moviesuffix) : '';
 const moveMovie = !!(argv.movemovie);
 
-
 if (!src || !fs.statSync(src).isDirectory()) {
     console.log('You must specify --src as the path to a directory');
     process.exit(1);
 }
 
-if (!pictureDir || !pathExistsSync(pictureDir) || !fs.statSync(pictureDir).isDirectory()) {
-    console.log('You must specify --pictures as the path to a directory');
-    process.exit(1);
-}
-
-if (!movieDir || !pathExistsSync(movieDir) || !fs.statSync(movieDir).isDirectory()) {
-    console.log('You must specify --movies as the path to a directory');
-    process.exit(1);
-}
-
-const pictures = {
+const pictures = !!pictureDir && {
     dest: pictureDir,
     nameFormat: pictureNameFormat,
     suffix: pictureSuffix,
     moveFile: movePicture
 };
 
-const movies = {
+const movies = !!movieDir && {
     dest: movieDir,
     nameFormat: movieNameFormat,
     suffix: movieSuffix,
@@ -78,18 +67,18 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, progres
                         switch (path.extname(filePath).toLowerCase()) {
                             case '.jpg':
                             case '.jpeg':
-                                processJpeg(filePath, pictures, noop, progress);
+                                pictures && processJpeg(filePath, pictures, noop, progress);
                                 break;
 
                             case '.gif':
-                                processGenericPicture(filePath, pictures, noop, progress);
+                                pictures && processGenericPicture(filePath, pictures, noop, progress);
                                 break;
 
                             case '.mov':
                             case '.avi':
                             case '.3gp':
                             case '.mp4':
-                                processMovie(filePath, movies, noop, progress);
+                                movies && processMovie(filePath, movies, noop, progress);
                                 break;
 
                             default:
@@ -210,7 +199,7 @@ function copyFile(filePath, timestamp, { dest, nameFormat, suffix, moveFile }, n
 function renameOrMoveSync(source, destination) {
     try {
         renameSync(source, destination);
-    } catch {
+    } catch (renameErr) {
         moveSync(source, destination);
     }
 }
