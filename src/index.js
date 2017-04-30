@@ -11,6 +11,7 @@ const src = argv.s || argv.src || argv.source;
 const recursive = !!(argv.r || argv.recurse || argv.recursive);
 const noop = !!(argv.noop);
 const label = argv.label ? ('-' + argv.label) : '';
+const dedupe = !!(argv.dedupe);
 
 const pictureDir = argv.copypictures || argv.movepictures;
 const pictureNameFormat = argv.picture || 'YYYY/YYYY-MM/YYYY-MM-DD/YYYY-MM-DD-HH-mm-ss';
@@ -36,6 +37,7 @@ const pictures = !!pictureDir && {
     dest: pictureDir,
     nameFormat: pictureNameFormat,
     label: pictureLabel,
+    dedupe,
     moveFile: movePicture
 };
 
@@ -43,6 +45,7 @@ const movies = !!movieDir && {
     dest: movieDir,
     nameFormat: movieNameFormat,
     label: movieLabel,
+    dedupe,
     moveFile: moveMovie
 };
 
@@ -50,6 +53,7 @@ const others = !!otherDir && {
     dest: otherDir,
     nameFormat: otherNameFormat,
     label: otherLabel,
+    dedupe,
     moveFile: moveOther
 };
 
@@ -207,9 +211,9 @@ function processMovie(movie, target, noop, progress, callback) {
     copyFile(movie, birthtime, target, noop, done);
 }
 
-function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, noop, callback) {
+function copyFile(filePath, timestamp, { dest, nameFormat, label, dedupe, moveFile }, noop, callback) {
     const ext = path.extname(filePath).toLowerCase();
-    const destFileName = moment(timestamp).format(nameFormat) + label + ext;
+    const destFileName = moment(timestamp).format(nameFormat) + label + (dedupe >= 2 ? '-' + dedupe : '') + ext;
     const destFilePath = path.join(dest, destFileName);
     const destFileDir = path.dirname(destFilePath);
 
@@ -224,8 +228,20 @@ function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, no
     mkdirp(destFileDir, (mkdirpErr) => {
         pathExists(destFilePath, (pathExistsErr, exists) => {
             if (exists) {
-                console.log(`# ${destFilePath} exists. Skipping.`);
-                done();
+                if (dedupe) {
+                    dedupe += 1;
+
+                    copyFile(filePath, timestamp, {
+                        dest,
+                        nameFormat,
+                        label,
+                        dedupe,
+                        moveFile
+                    }, noop, done);
+                } else {
+                    console.log(`# ${destFilePath} exists. Skipping.`);
+                    done();
+                }
             } else {
                 const operation = moveFile ? renameOrMoveSync : copySync;
                 const operationName = moveFile ? `mv` : 'cp';
@@ -294,7 +310,7 @@ const progress = {
 function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesWaiting, picturesTotal, moviesDone, moviesTotal, othersTotal, othersDone }) {
     console.log('# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
     console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
-    (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting}${picturesWaiting && ` (${picturesWaiting} waiting)`}`);
+    (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting}${picturesWaiting ? ` (${picturesWaiting} waiting)` : ''}`);
     moviesTotal && console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
     othersTotal && console.log(`# Others:      ${othersDone} / ${othersTotal}`);
     console.log('# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv');
