@@ -56,6 +56,10 @@ function processDirectory(srcDirectory, recurse, pictureDir, movieDir, pictureNa
                                 processJpeg(filePath, pictureDir, pictureNameFormat);
                                 break;
 
+                            case '.gif':
+                                processGenericPicture(filePath, pictureDir, pictureNameFormat);
+                                break;
+
                             case '.mov':
                             case '.avi':
                             case '.3gp':
@@ -80,23 +84,25 @@ function processJpeg(image, destDirectory, filenameFormat) {
         if (imageErr) {
             console.warn(`Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
-            fs.stat(image, (statErr, stats) => {
-                if (statErr) {
-                    console.warn(`Error processing file ${image}.\n${statErr}`);
-                    return;
-                }
-
-                const { birthtime } = stats;
-                copyFile(image, birthtime, destDirectory, filenameFormat);
-            });
-
-            return;
+            return processGenericPicture(image, destDirectory, filenameFormat);
         }
 
         const { DateTimeOriginal } = exif;
         const parsedDate = parse(DateTimeOriginal);
 
         copyFile(image, parsedDate, destDirectory, filenameFormat);
+    });
+}
+
+function processGenericPicture(picture, destDirectory, filenameFormat) {
+    fs.stat(picture, (statErr, stats) => {
+        if (statErr) {
+            console.warn(`Error processing file ${picture}.\n${statErr}`);
+            return;
+        }
+
+        const { birthtime } = stats;
+        copyFile(picture, birthtime, destDirectory, filenameFormat);
     });
 }
 
