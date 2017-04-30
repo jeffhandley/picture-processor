@@ -10,16 +10,16 @@ import { copySync, moveSync, pathExists, pathExistsSync } from 'fs-extra';
 const src = argv.s || argv.src || argv.source;
 const recursive = !!(argv.r || argv.recurse || argv.recursive);
 const noop = !!(argv.noop);
-const suffix = argv.suffix ? ('-' + argv.suffix) : '';
+const label = argv.label ? ('-' + argv.label) : '';
 
 const pictureDir = argv.copypictures || argv.movepictures;
 const pictureNameFormat = argv.picture || 'YYYY/YYYY-MM/YYYY-MM-DD/YYYY-MM-DD-HH-mm-ss';
-const pictureSuffix = argv.picturesuffix ? ('-' + argv.picturesuffix) : suffix;
+const pictureLabel = argv.picturelabel ? ('-' + argv.picturelabel) : label;
 const movePicture = !!(argv.movepictures);
 
 const movieDir = argv.copymovies || argv.movemovies;
 const movieNameFormat = argv.movie || 'YYYY-MM-DD-HH-mm-ss';
-const movieSuffix = argv.moviesuffix ? ('-' + argv.moviesuffix) : suffix;
+const movieLabel = argv.movielabel ? ('-' + argv.movielabel) : label;
 const moveMovie = !!(argv.movemovies);
 
 if (!src || !fs.statSync(src).isDirectory()) {
@@ -30,14 +30,14 @@ if (!src || !fs.statSync(src).isDirectory()) {
 const pictures = !!pictureDir && {
     dest: pictureDir,
     nameFormat: pictureNameFormat,
-    suffix: pictureSuffix,
+    label: pictureLabel,
     moveFile: movePicture
 };
 
 const movies = !!movieDir && {
     dest: movieDir,
     nameFormat: movieNameFormat,
-    suffix: movieSuffix,
+    label: movieLabel,
     moveFile: moveMovie
 };
 
@@ -170,9 +170,9 @@ function processMovie(movie, target, noop, progress) {
     });
 }
 
-function copyFile(filePath, timestamp, { dest, nameFormat, suffix, moveFile }, noop, callback) {
+function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, noop, callback) {
     const ext = path.extname(filePath).toLowerCase();
-    const destFileName = moment(timestamp).format(nameFormat) + suffix + ext;
+    const destFileName = moment(timestamp).format(nameFormat) + label + ext;
     const destFilePath = path.join(dest, destFileName);
     const destFileDir = path.dirname(destFilePath);
 
