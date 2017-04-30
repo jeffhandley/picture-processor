@@ -77,7 +77,7 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
                 } else if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
-                            processDirectory(filePath, recurse, noop, pictures, movies, others, progress, done);
+                            processDirectory(filePath, recurse, noop, pictures, movies, others, progress);
                         }
                     } else if (stats.isFile()) {
                         switch (path.extname(filePath).toLowerCase()) {
@@ -125,14 +125,19 @@ function processJpeg(image, target, noop, progress, callback) {
 
         return setTimeout(() => {
             progress.picturesWaiting -= 1;
-            processJpeg(image, target, noop, progress);
+            processJpeg(image, target, noop, progress, callback);
         }, 100);
     }
 
     const done = () => {
         progress.picturesDone += 1;
         showProgress(progress);
-        callback();
+
+        if (!callback) {
+            console.log('# No callback provided to processJpeg');
+        } else {
+            callback();
+        }
     };
 
     console.log(`# Loading ${image}`);
@@ -162,7 +167,9 @@ function processFile(file, target, noop, progress, callback) {
         progress.othersDone += 1;
         showProgress(progress);
 
-        if (callback) {
+        if (!callback) {
+            console.log('# No callback provided to processFile');
+        } else {
             callback();
         }
     };
@@ -185,7 +192,12 @@ function processMovie(movie, target, noop, progress, callback) {
     const done = () => {
         progress.moviesDone += 1;
         showProgress(progress);
-        callback();
+
+        if (!callback) {
+            console.log('# No callback provided to processMovie');
+        } else {
+            callback();
+        }
     };
 
     const stats = fs.statSync(movie);
@@ -200,11 +212,19 @@ function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, no
     const destFilePath = path.join(dest, destFileName);
     const destFileDir = path.dirname(destFilePath);
 
+    const done = (copyFileErr) => {
+        if (!callback) {
+            console.log('# No callback provided to copyFile');
+        } else {
+            callback(copyFileErr);
+        }
+    };
+
     mkdirp(destFileDir, (mkdirpErr) => {
         pathExists(destFilePath, (pathExistsErr, exists) => {
             if (exists) {
                 console.log(`# ${destFilePath} exists. Skipping.`);
-                callback();
+                done();
             } else {
                 const operation = moveFile ? renameOrMoveSync : copySync;
                 const operationName = moveFile ? `mv` : 'cp';
@@ -214,13 +234,13 @@ function copyFile(filePath, timestamp, { dest, nameFormat, label, moveFile }, no
                 if (!noop) {
                     try {
                         operation(filePath, destFilePath);
-                        callback();
+                        done();
                     } catch (copyErr) {
                         console.warn(`# Error ${operationName} ${destFilePath}.\n${copyErr}`);
-                        callback(copyErr);
+                        done(copyErr);
                     }
                 } else {
-                    callback();
+                    done();
                 }
             }
         });
