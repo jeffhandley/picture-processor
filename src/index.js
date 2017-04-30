@@ -42,7 +42,9 @@ function processDirectory(srcDirectory, recurse, pictureDir, movieDir, pictureNa
             console.log(`Processing ${filePath}`);
 
             fs.stat(filePath, (statErr, stats) => {
-                if (stats) {
+                if (statErr) {
+                    console.warn(`Error processing ${filePath}\n${statErr}`);
+                } else if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
                             processDirectory(filePath, recurse, pictureDir, movieDir, pictureNameFormat, movieNameFormat);
@@ -73,6 +75,22 @@ function processJpeg(image, destDirectory, filenameFormat) {
     console.log(`Processing jpeg file ${image}`);
 
     new ExifImage({ image }, (imageErr, { exif }) => {
+        if (imageErr) {
+            console.warn(`Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
+
+            fs.stat(image, (statErr, stats) => {
+                if (statErr) {
+                    console.warn(`Error processing file ${image}.\n${statErr}`);
+                    return;
+                }
+
+                const { birthtime } = stats;
+                copyFile(image, birthtime, destDirectory, filenameFormat);
+            });
+
+            return;
+        }
+
         const { DateTimeOriginal } = exif;
         const parsedDate = parse(DateTimeOriginal);
 
@@ -83,9 +101,13 @@ function processJpeg(image, destDirectory, filenameFormat) {
 function processMovie(movie, destDirectory, filenameFormat) {
     console.log(`Processing movie file ${movie}`);
 
-    fs.stat(movie, (err, stats) => {
-        const { birthtime } = stats;
+    fs.stat(movie, (statErr, stats) => {
+        if (statErr) {
+            console.warn(`Error processing movie ${movie}.\n${statErr}`);
+            return;
+        }
 
+        const { birthtime } = stats;
         copyFile(movie, birthtime, destDirectory, filenameFormat);
     });
 }
