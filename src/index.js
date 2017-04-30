@@ -57,6 +57,10 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
     progress.directoriesTotal += 1;
     showProgress(progress);
 
+    const done = () => {
+        showProgress(progress);
+    };
+
     console.log(`# Processing ${srcDirectory}${recursive && ', recursively'}`);
 
     fs.readdir(srcDirectory, (dirErr, files) => {
@@ -73,29 +77,29 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
                 } else if (stats) {
                     if (stats.isDirectory()) {
                         if (recurse) {
-                            processDirectory(filePath, recurse, noop, pictures, movies, others, progress);
+                            processDirectory(filePath, recurse, noop, pictures, movies, others, progress, done);
                         }
                     } else if (stats.isFile()) {
                         switch (path.extname(filePath).toLowerCase()) {
                             case '.jpg':
                             case '.jpeg':
-                                pictures && processJpeg(filePath, pictures, noop, progress);
+                                pictures && processJpeg(filePath, pictures, noop, progress, done);
                                 break;
 
                             case '.gif':
-                                pictures && processFile(filePath, pictures, noop, progress);
+                                pictures && processFile(filePath, pictures, noop, progress, done);
                                 break;
 
                             case '.mov':
                             case '.avi':
                             case '.3gp':
                             case '.mp4':
-                                movies && processMovie(filePath, movies, noop, progress);
+                                movies && processMovie(filePath, movies, noop, progress, done);
                                 break;
 
                             default:
                                 if (others) {
-                                    processFile(filePath, others, noop, progress);
+                                    processFile(filePath, others, noop, progress, done);
                                 } else {
                                     console.warn(`# Unrecognized file type for ${filePath}`);
                                 }
@@ -110,7 +114,7 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
     });
 }
 
-function processJpeg(image, target, noop, progress) {
+function processJpeg(image, target, noop, progress, callback) {
     if (progress.picturesTotal - progress.picturesDone > 10) {
         progress.picturesWaiting += 1;
 
@@ -128,6 +132,7 @@ function processJpeg(image, target, noop, progress) {
     const done = () => {
         progress.picturesDone += 1;
         showProgress(progress);
+        callback();
     };
 
     console.log(`# Loading ${image}`);
@@ -139,7 +144,7 @@ function processJpeg(image, target, noop, progress) {
         if (imageErr) {
             console.warn(`# Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
-            return processFile(image, target, noop, progress);
+            return processFile(image, target, noop, progress, done);
         }
 
         const { DateTimeOriginal } = exifData.exif;
@@ -149,13 +154,17 @@ function processJpeg(image, target, noop, progress) {
     });
 }
 
-function processFile(file, target, noop, progress) {
+function processFile(file, target, noop, progress, callback) {
     progress.othersTotal += 1;
     showProgress(progress);
 
     const done = () => {
         progress.othersDone += 1;
         showProgress(progress);
+
+        if (callback) {
+            callback();
+        }
     };
 
     fs.stat(file, (statErr, stats) => {
@@ -169,13 +178,14 @@ function processFile(file, target, noop, progress) {
     });
 }
 
-function processMovie(movie, target, noop, progress) {
+function processMovie(movie, target, noop, progress, callback) {
     progress.moviesTotal += 1;
     showProgress(progress);
 
     const done = () => {
         progress.moviesDone += 1;
         showProgress(progress);
+        callback();
     };
 
     const stats = fs.statSync(movie);
@@ -261,11 +271,12 @@ const progress = {
 };
 
 function showProgress({ directoriesDone, directoriesTotal, picturesDone, picturesWaiting, picturesTotal, moviesDone, moviesTotal, othersTotal, othersDone }) {
-    console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
-    directoriesTotal && console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
+    console.log('# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
+    console.log(`# Directories: ${directoriesDone} / ${directoriesTotal}`);
     (picturesTotal || picturesWaiting) && console.log(`# Pictures:    ${picturesDone} / ${picturesTotal + picturesWaiting} (${picturesWaiting} waiting)`);
     moviesTotal && console.log(`# Movies:      ${moviesDone} / ${moviesTotal}`);
     othersTotal && console.log(`# Others:      ${othersDone} / ${othersTotal}`);
+    console.log('# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv');
 }
 
 processDirectory(src, recursive, noop, pictures, movies, others, progress);
