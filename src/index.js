@@ -114,7 +114,10 @@ function processJpeg(image, target, noop, progress) {
     if (progress.picturesTotal - progress.picturesDone > 10) {
         progress.picturesWaiting += 1;
 
-        console.log(`# Queueing ${image}`);
+        if (progress.picturesWaiting > progress.picturesWaitingReported) {
+            progress.picturesWaitingReported = progress.picturesWaiting;
+            showProgress(progress);
+        }
 
         return setTimeout(() => {
             progress.picturesWaiting -= 1;
@@ -136,7 +139,7 @@ function processJpeg(image, target, noop, progress) {
         if (imageErr) {
             console.warn(`# Error processing EXIF data for ${image}.\n${imageErr}\n\nUsing file creation date.`);
 
-            return processFile(image, target, noop, done);
+            return processFile(image, target, noop, progress);
         }
 
         const { DateTimeOriginal } = exifData.exif;
@@ -249,6 +252,7 @@ const progress = {
     directoriesDone: 0,
     picturesTotal: 0,
     picturesWaiting: 0,
+    picturesWaitingReported: 0,
     picturesDone: 0,
     moviesTotal: 0,
     moviesDone: 0,
