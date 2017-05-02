@@ -100,6 +100,9 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
 
                             case '.gif':
                             case '.mpo':
+                            case '.png':
+                            case '.bmp':
+                            case '.pdf':
                                 pictures && processFile(filePath, pictures, noop, progress, done);
                                 break;
 
@@ -107,12 +110,13 @@ function processDirectory(srcDirectory, recurse, noop, pictures, movies, others,
                             case '.avi':
                             case '.3gp':
                             case '.mp4':
+                            case '.mpg':
                                 movies && processMovie(filePath, movies, noop, progress, done);
                                 break;
 
                             default:
                                 if (others) {
-                                    processFile(filePath, others, noop, progress, done);
+                                    processFile(filePath, { ...others, label: basename(filePath) }, noop, progress, done);
                                 } else {
                                     consoleWarn(`Unrecognized file type for ${filePath}`);
                                 }
