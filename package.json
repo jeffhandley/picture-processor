@@ -29,5 +29,8 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.18.1",
     "yargs": "^7.1.0"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-object-rest-spread": "^6.23.0"
   }
 }
